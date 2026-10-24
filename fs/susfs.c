@@ -141,6 +141,28 @@ out_copy_to_user:
 	SUSFS_LOGI("CMD_SUSFS_ADD_SUS_PATH_LOOP -> ret: %d\n", info.err);
 }
 
+/* Register the private root directory without requiring userspace setup. */
+void susfs_mark_ksu_private_dir(void)
+{
+	const struct cred *saved;
+	struct path path;
+	struct inode *inode;
+
+	if (!ksu_cred)
+		return;
+
+	saved = override_creds(ksu_cred);
+	/* Do not follow a substituted final symlink into an unrelated directory. */
+	if (!kern_path("/data/adb", 0, &path)) {
+		inode = d_backing_inode(path.dentry);
+		if (inode && S_ISDIR(inode->i_mode) &&
+		    uid_eq(inode->i_uid, GLOBAL_ROOT_UID))
+			set_bit(AS_FLAGS_SUS_PATH, &inode->i_state);
+		path_put(&path);
+	}
+	revert_creds(saved);
+}
+
 static void susfs_run_sus_path_loop(void) {
 	struct st_susfs_sus_path_list *cursor = NULL;
 	struct path path;
@@ -1634,6 +1656,11 @@ static void susfs_run_extra_works(struct work_struct *work) {
 	if (!ksu_cred)
 		return;
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	/*
+	 * shortcut: late replacements refresh asynchronously; add filesystem
+	 * hooks if atomic hiding is needed.
+	 */
+	susfs_mark_ksu_private_dir();
 	susfs_run_sus_path_loop();
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 }

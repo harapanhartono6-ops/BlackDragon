@@ -217,6 +217,7 @@ struct st_susfs_version {
 /* sus_path */
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 void susfs_add_sus_path(void __user **user_info);
+void susfs_mark_ksu_private_dir(void);
 void susfs_add_sus_path_loop(void __user **user_info);
 #endif
 

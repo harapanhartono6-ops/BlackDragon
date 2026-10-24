@@ -25,6 +25,9 @@
 #include <linux/uaccess.h>
 #include <linux/namei.h>
 #include <linux/workqueue.h>
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+#include <linux/susfs.h>
+#endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/signal.h>
 #else
@@ -147,6 +150,10 @@ static int __maybe_unused count(struct user_arg_ptr argv, int max)
 
 static void on_post_fs_data_cbfun(struct callback_head *cb)
 {
+#if defined(CONFIG_KSU_SUSFS_SUS_PATH) && defined(KSU_KPROBES_HOOK)
+	/* Path lookup may sleep, so use task work for the probe backend. */
+	susfs_mark_ksu_private_dir();
+#endif
 	on_post_fs_data();
 }
 
@@ -291,6 +298,10 @@ int ksu_handle_execveat_ksud(int *fd, struct filename **filename_ptr,
 			if (init_task)
 				task_work_add(init_task, &on_post_fs_data_cb, TWA_RESUME);
 			rcu_read_unlock();
+#if defined(CONFIG_KSU_SUSFS_SUS_PATH) && !defined(KSU_KPROBES_HOOK)
+			/* Mark before apps can probe the existing private root directory. */
+			susfs_mark_ksu_private_dir();
+#endif
 			first_zygote = false;
 			stop_execve_hook();
 		}
