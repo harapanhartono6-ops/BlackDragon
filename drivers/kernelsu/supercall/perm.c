@@ -30,3 +30,8 @@ bool allowed_for_su(void)
 	bool is_allowed = is_manager() || ksu_is_allow_uid_for_current(current_uid().val);
 	return is_allowed;
 }
+
+bool allowed_for_driver(void)
+{
+	return manager_or_root() || allowed_for_su();
+}

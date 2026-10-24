@@ -1062,6 +1062,10 @@ long ksu_supercall_handle_ioctl(const struct file *filp, unsigned int cmd, void 
 {
 	int i;
 
+	/* Recheck the caller when a normal control fd is inherited or passed. */
+	if (!allowed_for_driver() && !ksu_is_su_session_fd(filp))
+		return -EPERM;
+
 #ifdef CONFIG_KSU_DEBUG
 	pr_info("ksu ioctl: cmd=0x%x from uid=%d\n", cmd, current_uid().val);
 #endif

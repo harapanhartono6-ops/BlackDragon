@@ -88,6 +88,9 @@ static int ksu_install_fd_with_permissions(unsigned int fd_flags, unsigned long 
 
 int ksu_install_fd(void)
 {
+    if (!allowed_for_driver())
+        return -EPERM;
+
     return ksu_install_fd_with_permissions(O_CLOEXEC, 0);
 }
 
@@ -213,6 +216,8 @@ int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd,
 	// Check if this is a request to install KSU fd
 	if (magic2 == KSU_INSTALL_MAGIC2) {
 		int fd = ksu_install_fd();
+		if (fd < 0)
+			return 0;
 		// downstream: dereference all arg usage!
 		if (copy_to_user((void __user *)*arg, &fd, sizeof(fd))) {
 			pr_err("install ksu fd reply err\n");

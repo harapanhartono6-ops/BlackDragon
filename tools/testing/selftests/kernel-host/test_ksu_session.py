@@ -35,6 +35,7 @@ struct file { void *private_data; };
 static struct file installed;
 static int alloc_error, fd_error, inode_error, allocated, reserved, installs;
 static bool permitted;
+static bool allowed_for_driver(void) { return permitted; }
 static int anon_ksu_fops;
 static void *kzalloc(size_t size, int flags) {
     if (alloc_error) return NULL;
@@ -72,13 +73,37 @@ for signature, name in [
 code += (ROOT / (base + 'supercall/supercall.h')).read_text().split(
     '// IOCTL handler types', 1)[1].split('// Install KSU fd', 1)[0]
 for name in permissions:
-    code += f'static bool {name}(void) {{ return permitted; }}\n'
+    code += f'static bool {name}(void) {{ return {"true" if name == "always_allow" else "permitted"}; }}\n'
 for name in handlers:
     code += f'static int {name}(void *arg) {{ return 123; }}\n'
 code += 'enum { ' + ', '.join(commands) + ' };\n'
 code += 'static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = ' + table
 code += 'long ksu_supercall_handle_ioctl(const struct file *filp, unsigned int cmd, void *argp)'
 code += function_body(dispatch, 'ksu_supercall_handle_ioctl')
+
+# Compile the production install-request branch without unrelated root extensions.
+code += r'''
+#define LINUX_VERSION_CODE 0
+#define KERNEL_VERSION(a,b,c) (((a)<<16)|((b)<<8)|(c))
+#define KSU_INSTALL_MAGIC2 0xCAFEBABE
+static int replies, reply_error, closes;
+static struct { void *files; } task;
+#define current (&task)
+static int copy_to_user(void *dst, const void *src, size_t size) {
+    replies++;
+    if (reply_error) return 1;
+    memcpy(dst, src, size);
+    return 0;
+}
+static int __close_fd(void *files, int fd) {
+    assert(fd == 7);
+    closes++;
+    return anon_ksu_release(NULL, &installed);
+}
+static int install_request(unsigned int magic2, void **arg) {
+'''
+code += source.split('// Check if this is a request to install KSU fd', 1)[1].split('// extensions', 1)[0]
+code += 'return 0; }\n'
 code += r'''
 int main(void) {
     struct file empty = {0};
@@ -91,15 +116,24 @@ int main(void) {
     assert(ksu_install_su_fd() == -ENOMEM);
     assert(!allocated && !reserved && !installs);
     inode_error = 0;
+    assert(ksu_install_fd() == -EPERM);
+    assert(!allocated && !reserved && !installs);
+    permitted = true;
     assert(ksu_install_fd() == 7);
+    permitted = false;
     assert(!ksu_is_su_session_fd(&installed));
+    assert(ksu_supercall_handle_ioctl(&installed, KSU_IOCTL_GET_INFO, NULL) == -EPERM);
+    assert(ksu_supercall_handle_ioctl(&installed, KSU_IOCTL_GET_INFO_LEGACY, NULL) == -EPERM);
+    assert(ksu_supercall_handle_ioctl(&installed, KSU_IOCTL_CHECK_SAFEMODE, NULL) == -EPERM);
     assert(ksu_supercall_handle_ioctl(&installed, KSU_IOCTL_GET_WRAPPER_FD, NULL) == -EPERM);
     anon_ksu_release(NULL, &installed);
     assert(ksu_install_su_fd() == 7);
     assert(ksu_is_su_session_fd(&installed));
     for (int i = 0; ksu_ioctl_handlers[i].handler; i++) {
         unsigned int cmd = ksu_ioctl_handlers[i].cmd;
-        bool scoped = cmd == KSU_IOCTL_GET_WRAPPER_FD || cmd == KSU_IOCTL_DISABLE_ESCAPE_TO_ROOT;
+        bool scoped = cmd == KSU_IOCTL_GET_WRAPPER_FD || cmd == KSU_IOCTL_DISABLE_ESCAPE_TO_ROOT ||
+                      cmd == KSU_IOCTL_GET_INFO || cmd == KSU_IOCTL_GET_INFO_LEGACY ||
+                      cmd == KSU_IOCTL_CHECK_SAFEMODE;
         assert(ksu_supercall_handle_ioctl(&installed, cmd, NULL) == (scoped ? 123 : -EPERM));
         permitted = true;
         assert(ksu_supercall_handle_ioctl(&installed, cmd, NULL) == 123);
@@ -108,7 +142,28 @@ int main(void) {
     assert(ksu_supercall_handle_ioctl(&installed, ~0U, NULL) == -ENOTTY);
     anon_ksu_release(NULL, &installed);
     assert(!allocated && !reserved);
-    puts("PASS: KernelSU scoped descriptors preserve permission boundaries and cleanup");
+    int reply = 0x13579;
+    void *arg = &reply;
+    assert(install_request(KSU_INSTALL_MAGIC2, &arg) == 0);
+    assert(reply == 0x13579 && !replies && !allocated && !reserved);
+    permitted = true;
+    alloc_error = 1;
+    assert(install_request(KSU_INSTALL_MAGIC2, &arg) == 0);
+    alloc_error = 0; fd_error = 1;
+    assert(install_request(KSU_INSTALL_MAGIC2, &arg) == 0);
+    fd_error = 0; inode_error = 1;
+    assert(install_request(KSU_INSTALL_MAGIC2, &arg) == 0);
+    inode_error = 0;
+    assert(reply == 0x13579 && !replies && !allocated && !reserved);
+    reply_error = 1;
+    assert(install_request(KSU_INSTALL_MAGIC2, &arg) == 0);
+    assert(reply == 0x13579 && replies == 1 && closes == 1 && !allocated && !reserved);
+    reply_error = 0;
+    assert(install_request(KSU_INSTALL_MAGIC2, &arg) == 0 && reply == 7);
+    assert(replies == 2 && !ksu_is_su_session_fd(&installed));
+    anon_ksu_release(NULL, &installed);
+    assert(!allocated && !reserved);
+    puts("PASS: KernelSU scoped descriptors, denied/failed replies and FD cleanup");
 }
 '''
 run_c(code)
@@ -197,3 +252,36 @@ int main(void) {
 run_c(code)
 
 run_c(code.replace("#define CONFIG_KSU_MANUAL_HOOK 1", ""))
+
+# Compile the real caller checks: ordinary users cannot obtain a driver handle.
+code = r'''
+#include <assert.h>
+#include <stdbool.h>
+#include <stdio.h>
+struct uid { unsigned int val; };
+static unsigned int uid;
+static bool manager, allowlisted;
+static struct uid current_uid(void) { return (struct uid){uid}; }
+static bool is_manager(void) { return manager; }
+static bool ksu_is_allow_uid_for_current(unsigned int value) { return allowlisted; }
+'''
+code += '\n'.join(line for line in (ROOT / (base + 'supercall/perm.c')).read_text().splitlines()
+                  if not line.startswith('#include'))
+code += r'''
+int main(void) {
+    uid = 10123;
+    assert(!allowed_for_driver());
+    manager = true;
+    assert(allowed_for_driver());
+    manager = false; allowlisted = true;
+    assert(allowed_for_driver());
+    allowlisted = false; uid = 0;
+    assert(allowed_for_driver());
+    uid = 2000;
+    assert(!allowed_for_driver());
+    uid = 99001;
+    assert(!allowed_for_driver());
+    puts("PASS: KernelSU driver access is limited to root, Manager and allowlisted callers");
+}
+'''
+run_c(code)
