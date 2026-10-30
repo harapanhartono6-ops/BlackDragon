@@ -21,6 +21,15 @@ jobs:
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
     steps:
+      - name: Verify SELinux Config
+        shell: bash
+        run: |
+          echo "VERIFY SELINUX CONFIG STARTED"
+          mkdir -p out
+          echo "CONFIGURATION:"
+          grep -E 'CONFIG_SECURITY|CONFIG_AUDIT' out/.config || true
+          echo "VERIFY SELINUX CONFIG FINISHED"
+          
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -43,12 +52,6 @@ jobs:
 
       - name: Build kernel
         run: bash ./build.sh
-
-      - name: Verify SELinux Config
-        shell: bash
-        run: |
-          echo "=== SELINUX CONFIG ==="
-          grep -E 'CONFIG_SECURITY|CONFIG_AUDIT' out/.config || true
 
       - name: SELinux Diagnostics
         if: always()
