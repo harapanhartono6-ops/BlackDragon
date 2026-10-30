@@ -182,6 +182,12 @@ echo "======================================"
 echo "       SELINUX HEADER CHECK"
 echo "======================================"
 
+echo "===== SELINUX CONFIG ====="
+
+grep -E '^CONFIG_(SECURITY|SECURITY_NETWORK|SECURITY_SELINUX|AUDIT)=' "$CONFIG_FILE" || true
+
+echo "===== END CHECK ====="
+
 find "$OUT_DIR" security/selinux \
     \( -name 'flask.h' -o -name 'av_permissions.h' \) \
     -print 2>/dev/null || true
