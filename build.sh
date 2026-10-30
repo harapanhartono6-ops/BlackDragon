@@ -40,7 +40,7 @@ fi
 # ============================================================
 
 # Kernel build configuration
-KERNEL_NAME="Astra-thenoah77-"
+KERNEL_NAME="-BlackDragon-@Kitshune-"
 DEVICE="RMX2061"
 VARIANT="perf"
 BUILD_TYPE="KSU"
