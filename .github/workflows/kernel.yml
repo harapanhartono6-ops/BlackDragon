@@ -44,11 +44,14 @@ jobs:
       - name: Build kernel
         run: bash ./build.sh
 
-        echo "=== SELINUX CONFIG ==="
-        grep -E 'CONFIG_SECURITY_SELINUX|CONFIG_SECURITY=' out/.config || true
+      - name: Check SELinux Configuration
+        shell: bash
+        run: |
+          echo "=== SELINUX CONFIG ==="
+          grep -E 'CONFIG_SECURITY_SELINUX|CONFIG_SECURITY=' out/.config || true
 
-        echo "=== FLASK HEADER ==="
-        find security/selinux -name 'flask.h' -o -name 'av_permissions.h'
+          echo "=== FLASK HEADER ==="
+          find security/selinux -name 'flask.h' -o -name 'av_permissions.h'
       
       - name: Check and upload kernel config
         if: always()
