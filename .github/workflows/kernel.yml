@@ -41,6 +41,15 @@ jobs:
             ~/AnyKernel3
           key: ${{ runner.os }}-kernel-tools-v1
 
+      - name: Ganti KSU-Next ke BakaSU
+        run: |
+          rm -rf drivers/kernelsu KernelSU-Next
+          sed -i '/kernelsu/d' drivers/Makefile drivers/Kconfig
+          curl -LSs "<URL_SETUP_BAKASU>" | bash -s <tag-atau-commit>
+          grep -q '^CONFIG_KSU=y' arch/arm64/configs/atoll_defconfig \
+            || echo 'CONFIG_KSU=y' >> arch/arm64/configs/atoll_defconfig
+          grep -rn "ksu_handle" fs security drivers/input | head -30
+
       - name: Build kernel
         run: bash ./build.sh
 
