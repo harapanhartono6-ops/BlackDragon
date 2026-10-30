@@ -172,6 +172,24 @@ make O="$OUT_DIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 atoll_defconfig
 CONFIG_FILE="${OUT_DIR}/.config"
 [[ -f "$CONFIG_FILE" ]] || die "Defconfig did not produce ${CONFIG_FILE}"
 
+echo "======================================"
+echo "       SELINUX CONFIG CHECK"
+echo "======================================"
+
+grep -E 'CONFIG_SECURITY|CONFIG_AUDIT' "$CONFIG_FILE" || true
+
+echo "======================================"
+echo "       SELINUX HEADER CHECK"
+echo "======================================"
+
+find "$OUT_DIR" security/selinux \
+    \( -name 'flask.h' -o -name 'av_permissions.h' \) \
+    -print 2>/dev/null || true
+
+echo "======================================"
+echo "       CHECK FINISHED"
+echo "======================================"
+
 # Retain the checks present in the supplied build script.
 required_configs=(
     CONFIG_AS_IS_LLVM
