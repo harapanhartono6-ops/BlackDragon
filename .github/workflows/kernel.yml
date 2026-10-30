@@ -44,14 +44,30 @@ jobs:
       - name: Build kernel
         run: bash ./build.sh
 
-      - name: Check SELinux Configuration
+      - name: SELinux Diagnostics
+        if: always()
         shell: bash
         run: |
-          echo "=== SELINUX CONFIG ==="
-          grep -E 'CONFIG_SECURITY_SELINUX|CONFIG_SECURITY=' out/.config || true
+          {
+            echo "## SELinux Diagnostics"
+            echo ""
+            echo "### Configuration"
+            grep -E 'CONFIG_SECURITY_SELINUX|CONFIG_SECURITY=' out/.config || true
 
-          echo "=== FLASK HEADER ==="
-          find security/selinux -name 'flask.h' -o -name 'av_permissions.h'
+            echo ""
+            echo "### Flask headers"
+            find out security/selinux \
+              \( -name 'flask.h' -o -name 'av_permissions.h' \) \
+              -print 2>/dev/null || true
+
+            echo ""
+            echo "### Build errors"
+            if [ -f out/build.log ]; then
+              grep -n -C 3 -E "flask.h|error:|Error" out/build.log | tail -n 45 || true
+            else
+              echo "out/build.log tidak ditemukan"
+            fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       
       - name: Check and upload kernel config
         if: always()
