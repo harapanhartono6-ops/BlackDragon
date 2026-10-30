@@ -44,6 +44,12 @@ jobs:
       - name: Build kernel
         run: bash ./build.sh
 
+      - name: Verify SELinux Config
+        shell: bash
+        run: |
+          echo "=== SELINUX CONFIG ==="
+          grep -E 'CONFIG_SECURITY|CONFIG_AUDIT' out/.config || true
+
       - name: SELinux Diagnostics
         if: always()
         shell: bash
