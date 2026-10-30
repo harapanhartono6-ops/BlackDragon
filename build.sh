@@ -270,27 +270,24 @@ log "Kernel image compiled successfully"
 
 log "Packaging flashable ZIP"
 
-# Remove only previous BlackDragon ZIPs matching this naming scheme. Preserve
-# unrelated ZIP files that may belong to the AnyKernel3 repository.
+# Remove previous BlackDragon ZIPs
 find "$ANYKERNEL_DIR" -maxdepth 1 -type f \
     -name "${KERNEL_NAME}-${VARIANT}-${DEVICE}-${BUILD_TYPE}-*.zip" \
     -delete
 
 cp -- "$KERNEL_IMG" "${ANYKERNEL_DIR}/zImage"
 
+# Prevent unsupported options from being injected into Info-ZIP
+echo "ZIPOPT before cleanup: ${ZIPOPT:-<empty>}"
+unset ZIPOPT
+echo "ZIPOPT after cleanup: ${ZIPOPT:-<empty>}"
+
 (
-    (
     cd "$ANYKERNEL_DIR"
-
-    echo "=== ZIP VERSION ==="
-    zip -v | head -n 3
-
-    echo "=== CREATING ZIP ==="
     zip -r9 "$ZIPNAME" . \
         -x "*.zip" \
         -x ".git/*" \
         -x "README.md"
-)
 )
 
 ZIP_PATH="${ANYKERNEL_DIR}/${ZIPNAME}"
