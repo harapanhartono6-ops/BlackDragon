@@ -43,7 +43,7 @@ fi
 KERNEL_NAME="-BlackDragon-@Kitshune-"
 DEVICE="RMX2061"
 VARIANT="perf"
-BUILD_TYPE="KSU"
+BUILD_TYPE="BakaSU"
 VERSION_NUMBER="v1.0.1"
 
 DATE=$(date +%Y%m%d)
@@ -124,6 +124,9 @@ for config in "${required_configs[@]}"; do
     exit 1
   fi
 done
+
+grep -qx "CONFIG_KSU=y" "$OUT_DIR/.config" || {
+  echo -e "\n❌ CONFIG_KSU tidak aktif"; exit 1; }
 
 # =====================[ COMPILING ]=====================
 
