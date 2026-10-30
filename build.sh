@@ -279,11 +279,18 @@ find "$ANYKERNEL_DIR" -maxdepth 1 -type f \
 cp -- "$KERNEL_IMG" "${ANYKERNEL_DIR}/zImage"
 
 (
+    (
     cd "$ANYKERNEL_DIR"
+
+    echo "=== ZIP VERSION ==="
+    zip -v | head -n 3
+
+    echo "=== CREATING ZIP ==="
     zip -r9 "$ZIPNAME" . \
         -x "*.zip" \
         -x ".git/*" \
         -x "README.md"
+)
 )
 
 ZIP_PATH="${ANYKERNEL_DIR}/${ZIPNAME}"
