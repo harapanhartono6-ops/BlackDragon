@@ -68,18 +68,25 @@ jobs:
               echo "out/build.log tidak ditemukan"
             fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
-
+          
       - name: Check SELinux Header Generation
+        if: always()
         shell: bash
         run: |
-          echo "=== SELINUX CONFIG ==="
-          grep -E 'CONFIG_SECURITY_SELINUX|CONFIG_SECURITY=' out/.config || true
+          {
+            echo "## SELinux Header Generation"
+            echo ""
+            echo "### SELINUX CONFIG"
+            grep -E 'CONFIG_SECURITY_SELINUX|CONFIG_SECURITY=' out/.config || true
 
-          echo "=== SELINUX MAKEFILE ==="
-          grep -n -E 'flask|av_permissions|security' security/selinux/Makefile || true
+            echo ""
+            echo "### SELINUX MAKEFILE"
+            grep -n -E 'flask|av_permissions|security' security/selinux/Makefile || true
 
-          echo "=== HEADER FILES ==="
-          find . \( -name 'flask.h' -o -name 'av_permissions.h' \) -print
+            echo ""
+            echo "### HEADER FILES"
+            find . \( -name 'flask.h' -o -name 'av_permissions.h' \) -print 2>/dev/null || true
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       
       - name: Check and upload kernel config
         if: always()
