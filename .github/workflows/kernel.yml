@@ -3,10 +3,10 @@ name: Kernel Build
 on:
   push:
     branches:
-      - astra
+      - BlackDragon
+      - BlackDragon-BakaSu
       - astra-ksu
-      - mcqueen-ksu
-      - mcqueen
+      - astra
   pull_request:
   workflow_dispatch:
 
