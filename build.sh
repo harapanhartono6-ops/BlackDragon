@@ -21,7 +21,7 @@ GCC_DIR="${GCC_DIR:-${HOME}/toolchains/gcc-aarch64-linux-gnu-9.3}"
 ANYKERNEL_DIR="${ANYKERNEL_DIR:-${HOME}/AnyKernel3}"
 OUT_DIR="${OUT_DIR:-out}"
 
-KERNEL_NAME="-BlackDragon-@Kitshune-"
+KERNEL_NAME="BlackDragon-@Kitshune"
 DEVICE="RMX2061"
 VARIANT="perf"
 BUILD_TYPE="BakaSU"       # Artifact label only; see IMPORTANT note above.
@@ -284,7 +284,7 @@ echo "ZIPOPT after cleanup: ${ZIPOPT:-<empty>}"
 
 (
     cd "$ANYKERNEL_DIR"
-    zip -r9 "$ZIPNAME" . \
+    zip -r9 "./${ZIPNAME}" . \
         -x "*.zip" \
         -x ".git/*" \
         -x "README.md"
