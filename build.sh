@@ -256,6 +256,26 @@ echo "========== SUSFS SOURCE =========="
 git grep -inE 'susfs|sus_mount|sus_path|sus_kstat' \
     -- ':!*.md' | head -100 || true
 
+echo "========== SUSFS CORE FILE CHECK =========="
+
+if [[ -f fs/susfs.c ]]; then
+    echo "[FOUND] fs/susfs.c"
+else
+    echo "[MISSING] fs/susfs.c"
+fi
+
+if [[ -f include/linux/susfs.h ]]; then
+    echo "[FOUND] include/linux/susfs.h"
+    grep -n 'SUSFS_VERSION' include/linux/susfs.h || true
+else
+    echo "[MISSING] include/linux/susfs.h"
+fi
+
+echo "========== SUSFS BUILD LOG =========="
+
+grep -iE 'SUSFS_VERSION|not integrated SUSFS|integrated susfs' \
+    "$BUILD_LOG" || true
+
 # ---------------------------------------------------------------------------
 # Compile
 # ---------------------------------------------------------------------------
