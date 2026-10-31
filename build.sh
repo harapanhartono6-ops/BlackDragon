@@ -228,6 +228,35 @@ printf '\n⚠️ CONFIG_KSU=y is enabled, but this does not identify whether the
 printf '   BakaSU integration must be verified in the kernel source/setup files before flashing.\n'
 
 # ---------------------------------------------------------------------------
+# BakaSU validation
+# ---------------------------------------------------------------------------
+
+log "Validating KernelSU / BakaSU source"
+
+echo "========== KERNEL VERSION =========="
+make kernelversion
+
+echo "========== KSU CONFIG =========="
+grep -E 'CONFIG_KSU|CONFIG_KSU_MANUAL_HOOK|CONFIG_KSU_SUSFS' "$CONFIG_FILE" || true
+
+echo "========== KSU SOURCE =========="
+git grep -inE 'BakaSU|KernelSU-Next|KSU_NEXT|ReSukiSU' \
+    -- ':!*.md' | head -100 || true
+
+# ---------------------------------------------------------------------------
+# SUSFS validation
+# ---------------------------------------------------------------------------
+
+log "Validating SUSFS integration"
+
+echo "========== SUSFS CONFIG =========="
+grep -iE 'SUSFS|KSU_SUSFS' "$CONFIG_FILE" || true
+
+echo "========== SUSFS SOURCE =========="
+git grep -inE 'susfs|sus_mount|sus_path|sus_kstat' \
+    -- ':!*.md' | head -100 || true
+
+# ---------------------------------------------------------------------------
 # Compile
 # ---------------------------------------------------------------------------
 
