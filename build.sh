@@ -276,6 +276,28 @@ echo "========== SUSFS BUILD LOG =========="
 grep -iE 'SUSFS_VERSION|not integrated SUSFS|integrated susfs' \
     "$BUILD_LOG" || true
 
+echo "========== CURRENT KSU SOURCE =========="
+
+sed -n '1,100p' drivers/kernelsu/Makefile
+
+echo "========== CURRENT KSU SETUP =========="
+
+sed -n '1,100p' drivers/kernelsu/setup.sh
+
+echo "========== SUSFS CORE FILES =========="
+
+ls -l fs/susfs.c include/linux/susfs.h \
+    include/linux/susfs_def.h 2>&1
+
+echo "========== MANUAL HOOK REFERENCES =========="
+
+git grep -nE 'ksu_handle_(setuid|sys_read|input_handle_event)' \
+    -- ':!*.md' || true
+
+echo "========== KSU SOURCE STATUS =========="
+
+git status --short
+
 # ---------------------------------------------------------------------------
 # Compile
 # ---------------------------------------------------------------------------
