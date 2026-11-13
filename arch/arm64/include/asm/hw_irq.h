@@ -1,1 +1,1 @@
-../../include/asm-generic/hw_irq.h
+../../../include/asm-generic/hw_irq.h
