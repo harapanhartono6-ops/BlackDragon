@@ -1,1 +1,1 @@
-../../../include/asm-generic/dma.h
+#include <asm-generic/dma.h>

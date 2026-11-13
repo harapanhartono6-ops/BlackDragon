@@ -1,1 +1,1 @@
-../../../../include/uapi/asm-generic/ipcbuf.h
+#include <asm-generic/ipcbuf.h>

@@ -1,1 +1,1 @@
-../../../include/asm-generic/asm-prototypes.h
+#include <asm-generic/asm-prototypes.h>

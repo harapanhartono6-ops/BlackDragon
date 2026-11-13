@@ -1,1 +1,1 @@
-../../../include/asm-generic/syscalls.h
+#include <asm-generic/syscalls.h>

@@ -1,1 +1,1 @@
-../../../../include/uapi/asm-generic/swab.h
+#include <asm-generic/swab.h>

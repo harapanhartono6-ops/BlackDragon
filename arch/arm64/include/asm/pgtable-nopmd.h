@@ -1,1 +1,1 @@
-../../../include/asm-generic/pgtable-nopmd.h
+#include <asm-generic/pgtable-nopmd.h>

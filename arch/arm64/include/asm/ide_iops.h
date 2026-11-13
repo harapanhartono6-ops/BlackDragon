@@ -1,1 +1,1 @@
-../../../include/asm-generic/ide_iops.h
+#include <asm-generic/ide_iops.h>

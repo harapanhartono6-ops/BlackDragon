@@ -1,1 +1,1 @@
-../../../include/asm-generic/vmlinux.lds.h
+#include <asm-generic/vmlinux.lds.h>

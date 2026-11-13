@@ -1,1 +1,1 @@
-../../../include/asm-generic/trace_clock.h
+#include <asm-generic/trace_clock.h>

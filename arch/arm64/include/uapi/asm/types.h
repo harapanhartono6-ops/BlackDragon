@@ -1,1 +1,1 @@
-../../../../include/uapi/asm-generic/types.h
+#include <asm-generic/types.h>

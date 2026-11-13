@@ -1,1 +1,1 @@
-../../../include/asm-generic/qrwlock.h
+#include <asm-generic/qrwlock.h>

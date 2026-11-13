@@ -1,1 +1,1 @@
-../../../include/asm-generic/atomic-instrumented.h
+#include <asm-generic/atomic-instrumented.h>

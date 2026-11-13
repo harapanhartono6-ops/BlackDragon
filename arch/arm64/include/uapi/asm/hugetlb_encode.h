@@ -1,1 +1,1 @@
-../../../../include/uapi/asm-generic/hugetlb_encode.h
+#include <asm-generic/hugetlb_encode.h>

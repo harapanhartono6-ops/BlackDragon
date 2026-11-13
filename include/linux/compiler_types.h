@@ -1,6 +1,10 @@
 #ifndef __LINUX_COMPILER_TYPES_H
 #define __LINUX_COMPILER_TYPES_H
 
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+
 #ifndef __ASSEMBLY__
 
 #ifdef __CHECKER__

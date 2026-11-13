@@ -1,1 +1,1 @@
-../../../../include/uapi/asm-generic/socket.h
+#include <asm-generic/socket.h>

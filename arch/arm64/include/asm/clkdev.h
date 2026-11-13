@@ -1,1 +1,1 @@
-../../../include/asm-generic/clkdev.h
+#include <asm-generic/clkdev.h>

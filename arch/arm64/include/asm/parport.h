@@ -1,1 +1,1 @@
-../../../include/asm-generic/parport.h
+#include <asm-generic/parport.h>

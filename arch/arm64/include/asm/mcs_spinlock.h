@@ -1,1 +1,1 @@
-../../../include/asm-generic/mcs_spinlock.h
+#include <asm-generic/mcs_spinlock.h>

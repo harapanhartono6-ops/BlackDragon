@@ -1,1 +1,1 @@
-../../../include/asm-generic/mm_hooks.h
+#include <asm-generic/mm_hooks.h>

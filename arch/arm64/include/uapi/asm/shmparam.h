@@ -1,1 +1,1 @@
-../../../../include/uapi/asm-generic/shmparam.h
+#include <asm-generic/shmparam.h>

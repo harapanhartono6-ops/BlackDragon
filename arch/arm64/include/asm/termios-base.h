@@ -1,1 +1,1 @@
-../../../include/asm-generic/termios-base.h
+#include <asm-generic/termios-base.h>

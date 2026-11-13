@@ -1,1 +1,1 @@
-../../../include/asm-generic/iomap.h
+#include <asm-generic/iomap.h>

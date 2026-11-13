@@ -1,1 +1,1 @@
-../../../include/asm-generic/qspinlock.h
+#include <asm-generic/qspinlock.h>

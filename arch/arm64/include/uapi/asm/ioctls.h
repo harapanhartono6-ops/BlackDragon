@@ -1,1 +1,1 @@
-../../../../include/uapi/asm-generic/ioctls.h
+#include <asm-generic/ioctls.h>

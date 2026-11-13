@@ -1,1 +1,1 @@
-../../../../include/uapi/asm-generic/errno.h
+#include <asm-generic/errno.h>

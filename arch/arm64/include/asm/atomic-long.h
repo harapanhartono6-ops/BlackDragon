@@ -1,1 +1,1 @@
-../../../include/asm-generic/atomic-long.h
+#include <asm-generic/atomic-long.h>

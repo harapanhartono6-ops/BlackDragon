@@ -1,1 +1,1 @@
-../../../../include/uapi/asm-generic/shmbuf.h
+#include <asm-generic/shmbuf.h>

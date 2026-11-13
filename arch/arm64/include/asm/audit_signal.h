@@ -1,1 +1,1 @@
-../../../include/asm-generic/audit_signal.h
+#include <asm-generic/audit_signal.h>

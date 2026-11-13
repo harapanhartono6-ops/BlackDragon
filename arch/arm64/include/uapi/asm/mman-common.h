@@ -1,1 +1,1 @@
-../../../../include/uapi/asm-generic/mman-common.h
+#include <asm-generic/mman-common.h>

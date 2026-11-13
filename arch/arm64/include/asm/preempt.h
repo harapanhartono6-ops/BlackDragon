@@ -1,1 +1,1 @@
-../../../include/asm-generic/preempt.h
+#include <asm-generic/preempt.h>
