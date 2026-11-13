@@ -49,7 +49,7 @@ jobs:
           set -o pipefail
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang HOSTCC=gcc \
             KBUILD_BUILD_WERROR= \
-            KCFLAGS="-no-integrated-as -Wno-error -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -Wno-int-to-void-pointer-cast -Wno-discarded-qualifiers -Wno-unknown-warning-option" \
+            KCFLAGS="-march=armv8-a -Wno-error -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -Wno-int-to-void-pointer-cast -Wno-discarded-qualifiers -Wno-unknown-warning-option" \
             KBUILD_CFLAGS="-Wno-error" \
             -j$(nproc) V=1 2>&1 | tee build.log
 
