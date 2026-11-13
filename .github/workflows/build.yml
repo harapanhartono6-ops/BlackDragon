@@ -1,0 +1,66 @@
+name: Build Neko-Kernel RMX2061
+
+on:
+  push:
+    branches: [ Neko-ksu ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make zstd bc bison flex libssl-dev libncurses5-dev \
+            git curl gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libelf-dev \
+            libncurses-dev gettext wget xz-utils
+
+      - name: Setup Neutron Clang
+        run: |
+          wget https://github.com/Neutron-Toolchains/clang-build-catalogue/releases/download/06092026/neutron-clang-06092026.tar.zst
+          mkdir -p ~/neutron-clang
+          tar --zstd -xf neutron-clang-06092026.tar.zst -C ~/neutron-clang --strip-components=1
+          echo "CLANG_PATH=$HOME/neutron-clang" >> $GITHUB_ENV
+          echo "PATH=$HOME/neutron-clang/bin:$PATH" >> $GITHUB_ENV
+
+      - name: Configure kernel
+        run: |
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CC=clang
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          export PATH=$HOME/neutron-clang/bin:$PATH
+          make ARCH=arm64 rmx2061_defconfig
+
+      - name: Build kernel
+        run: |
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CC=clang
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          export PATH=$HOME/neutron-clang/bin:$PATH
+          make ARCH=arm64 -j$(nproc) 2>&1 | tee build.log
+
+      - name: Check build artifacts
+        run: |
+          ls -la arch/arm64/boot/Image.gz-dtb 2>&1 || ls -la arch/arm64/boot/Image 2>&1
+
+      - name: Create flashable zip
+        run: |
+          cp arch/arm64/boot/Image.gz-dtb AnyKernel3/ 2>/dev/null || cp arch/arm64/boot/Image AnyKernel3/ 2>/dev/null
+          cd AnyKernel3
+          zip -r Neko-Kernel-RMX2061.zip .
+          ls -la Neko-Kernel-RMX2061.zip
+
+      - name: Upload flashable zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: neko-kernel-rmx2061
+          path: AnyKernel3/Neko-Kernel-RMX2061.zip
+          retention-days: 7
