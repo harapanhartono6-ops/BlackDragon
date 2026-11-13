@@ -8,6 +8,10 @@
 
 #include "expr.h"
 
+#ifndef __attribute_format_arg__
+#define __attribute_format_arg__(x)
+#endif
+
 #ifndef KBUILD_NO_NLS
 # include <libintl.h>
 #else

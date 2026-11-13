@@ -1,0 +1,38 @@
+/*
+ * Copyright (c) 2024 Neko Kernel Project
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+#include "mt6785.dtsi"
+
+/ {
+	model = "realme 6 Pro (RMX2061)";
+	compatible = "realme,rmx2061", "mediatek,mt6785";
+
+	aliases {
+		serial0 = &uart0;
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x40000000 0x0 0x18000000>;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+		bootargs = "androidboot.hardware=rmx2061 androidboot.selinux=permissive";
+	};
+};
+
+&uart0 {
+	status = "okay";
+};

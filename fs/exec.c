@@ -1918,7 +1918,22 @@ static int do_execveat_common(int fd, struct filename *filename,
 			      struct user_arg_ptr envp,
 			      int flags)
 {
-	return __do_execve_file(fd, filename, argv, envp, flags, NULL);
+#ifdef CONFIG_KSU_MANUAL_HOOK
+	__attribute__((hot))
+	extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr,
+	 void *argv, void *envp, int *flags);
+	__attribute__((hot))
+	extern int ksu_handle_post_execveat(int *fd, struct filename **filename_ptr,
+	 void *argv, void *envp, int *flags, int *retval);
+	ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
+#endif
+	int ret = __do_execve_file(fd, filename, argv, envp, flags, NULL);
+#ifdef CONFIG_KSU_MANUAL_HOOK
+	int ksu_retval = ret;
+	ksu_handle_post_execveat(&fd, &filename, &argv, &envp, &flags, &ksu_retval);
+	ret = ksu_retval;
+#endif
+	return ret;
 }
 
 int do_execve_file(struct file *file, void *__argv, void *__envp)
@@ -1935,7 +1950,22 @@ int do_execve(struct filename *filename,
 {
 	struct user_arg_ptr argv = { .ptr.native = __argv };
 	struct user_arg_ptr envp = { .ptr.native = __envp };
+#ifdef CONFIG_KSU_MANUAL_HOOK
+	__attribute__((hot))
+	extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr,
+	 void *argv, void *envp, int *flags);
+	__attribute__((hot))
+	extern int ksu_handle_post_execveat(int *fd, struct filename **filename_ptr,
+	 void *argv, void *envp, int *flags, int *retval);
+	int ksu_fd = AT_FDCWD;
+	int ksu_flags = 0;
+	ksu_handle_execveat(&ksu_fd, &filename, &argv, &envp, &ksu_flags);
+	int ksu_retval = do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
+	ksu_handle_post_execveat(&ksu_fd, &filename, &argv, &envp, &ksu_flags, &ksu_retval);
+	return ksu_retval;
+#else
 	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
+#endif
 }
 
 int do_execveat(int fd, struct filename *filename,
@@ -1962,7 +1992,22 @@ static int compat_do_execve(struct filename *filename,
 		.is_compat = true,
 		.ptr.compat = __envp,
 	};
+#ifdef CONFIG_KSU_MANUAL_HOOK
+	__attribute__((hot))
+	extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr,
+	 void *argv, void *envp, int *flags);
+	__attribute__((hot))
+	extern int ksu_handle_post_execveat(int *fd, struct filename **filename_ptr,
+	 void *argv, void *envp, int *flags, int *retval);
+	int ksu_fd = AT_FDCWD;
+	int ksu_flags = 0;
+	ksu_handle_execveat(&ksu_fd, &filename, &argv, &envp, &ksu_flags);
+	int ksu_retval = do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
+	ksu_handle_post_execveat(&ksu_fd, &filename, &argv, &envp, &ksu_flags, &ksu_retval);
+	return ksu_retval;
+#else
 	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
+#endif
 }
 
 static int compat_do_execveat(int fd, struct filename *filename,
