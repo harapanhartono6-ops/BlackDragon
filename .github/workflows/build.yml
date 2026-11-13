@@ -39,7 +39,7 @@ jobs:
           export PATH=$HOME/neutron-clang/bin:$PATH
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang HOSTCC=gcc \
             LLVM=1 \
-            rmx2061_defconfig
+            atoll_defconfig
 
       - name: Build kernel
         run: |
