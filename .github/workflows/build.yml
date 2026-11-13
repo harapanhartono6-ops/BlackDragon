@@ -45,7 +45,8 @@ jobs:
           export CC=clang
           export CLANG_TRIPLE=aarch64-linux-gnu-
           export PATH=$HOME/neutron-clang/bin:$PATH
-          make ARCH=arm64 -j$(nproc) 2>&1 | tee build.log
+          set -o pipefail
+          make ARCH=arm64 -j$(nproc) V=1 2>&1 | tee build.log
 
       - name: Check build artifacts
         run: |
