@@ -578,6 +578,8 @@ struct request_queue {
 #else /* OPLUS_FEATURE_HEALTHINFO */
 #ifdef CONFIG_OPPO_HEALTHINFO
 	unsigned int		in_flight[4];
+#else
+	unsigned int		in_flight[2];
 #endif
 #endif /* OPLUS_FEATURE_HEALTHINFO */
 	/*
