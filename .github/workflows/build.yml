@@ -38,7 +38,6 @@ jobs:
           export CROSS_COMPILE=aarch64-linux-gnu-
           export PATH=$HOME/neutron-clang/bin:$PATH
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang HOSTCC=gcc \
-            LLVM=1 LLVM_IAS=1 \
             rmx2061_defconfig
 
       - name: Build kernel
@@ -49,9 +48,8 @@ jobs:
           chmod +x scripts/basic/fixdep 2>/dev/null || true
           set -o pipefail
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang HOSTCC=gcc \
-            LLVM=1 LLVM_IAS=1 \
             KBUILD_BUILD_WERROR= \
-            KCFLAGS="-Wno-error -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -Wno-int-to-void-pointer-cast -Wno-discarded-qualifiers -Wno-unknown-warning-option" \
+            KCFLAGS="-no-integrated-as -Wno-error -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -Wno-int-to-void-pointer-cast -Wno-discarded-qualifiers -Wno-unknown-warning-option" \
             KBUILD_CFLAGS="-Wno-error" \
             -j$(nproc) V=1 2>&1 | tee build.log
 
