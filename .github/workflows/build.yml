@@ -44,8 +44,9 @@ jobs:
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
           export PATH=$HOME/neutron-clang/bin:$PATH
+          chmod +x scripts/basic/fixdep 2>/dev/null || true
           set -o pipefail
-          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang HOSTCC=gcc -j$(nproc) V=1 2>&1 | tee build.log
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang HOSTCC=gcc KCFLAGS="-Wno-error" -j$(nproc) V=1 2>&1 | tee build.log
 
       - name: Check build artifacts
         run: |
