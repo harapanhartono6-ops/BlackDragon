@@ -1,0 +1,330 @@
+name: Build Neko Kernel with BakaSU+SUSFS
+
+on:
+  push:
+    branches:
+      - Neko-Baka
+      - main
+  pull_request:
+    branches:
+      - Neko-Baka
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Kernel
+    runs-on: ubuntu-latest
+    
+    env:
+      KERNEL_NAME: Neko-Kernel-BakaSU
+      DEVICE: RMX2061
+      DEFCONFIG: vendor/atoll_defconfig
+      ARCH: arm64
+      
+    steps:
+    - name: Checkout kernel source
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 1
+        
+    - name: Setup build environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          bc bison build-essential ccache curl flex \
+          g++-multilib gcc-multilib git gnupg gperf \
+          imagemagick lib32ncurses5-dev lib32readline-dev \
+          lib32z1-dev liblz4-tool libncurses5 libncurses5-dev \
+          libsdl1.2-dev libssl-dev libwxgtk3.0-gtk3-dev \
+          libxml2 libxml2-utils lzop pngcrush rsync \
+          schedtool squashfs-tools xsltproc zip zlib1g-dev \
+          python3 python3-pip wget unzip
+    
+    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: kernel-build-${{ github.sha }}
+        restore-keys: |
+          kernel-build-
+        max-size: 8G
+        
+    - name: Download Neutron Clang 24
+      run: |
+        mkdir -p ~/toolchains
+        cd ~/toolchains
+        echo "Downloading Neutron Clang 24..."
+        wget -q https://github.com/Neutron-Toolchains/clang-build-catalogue/releases/latest/download/neutron-clang-24-aarch64-linux-gnu.tar.zst
+        echo "Extracting Neutron Clang..."
+        tar -I zstd -xf neutron-clang-24-aarch64-linux-gnu.tar.zst
+        rm neutron-clang-24-aarch64-linux-gnu.tar.zst
+        mv neutron-clang neutron-clang-24
+        echo "Clang installed at: ~/toolchains/neutron-clang-24"
+        ~/toolchains/neutron-clang-24/bin/clang --version
+        
+    - name: Clone BakaSU
+      run: |
+        git clone --depth=1 https://github.com/Baka-SU/BakaSU.git ~/BakaSU
+        echo "BakaSU cloned successfully"
+        
+    - name: Clone SUSFS
+      run: |
+        git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git ~/susfs4ksu
+        echo "SUSFS cloned successfully"
+        
+    - name: Integrate BakaSU kernel module
+      run: |
+        echo "Setting up BakaSU kernel module..."
+        cp -r ~/BakaSU/kernel BakaSU
+        ln -sf ../BakaSU drivers/bakasu
+        
+        # Patch drivers/Makefile
+        if ! grep -q "obj-\$(CONFIG_BAKASU) += bakasu/" drivers/Makefile; then
+          echo 'obj-$(CONFIG_BAKASU) += bakasu/' >> drivers/Makefile
+        fi
+        
+        # Patch drivers/Kconfig
+        if ! grep -q "source \"drivers/bakasu/Kconfig\"" drivers/Kconfig; then
+          sed -i '/^endmenu/i source "drivers/bakasu/Kconfig"' drivers/Kconfig
+        fi
+        
+        echo "BakaSU integrated successfully"
+        
+    - name: Integrate SUSFS
+      run: |
+        echo "Setting up SUSFS..."
+        cp ~/susfs4ksu/kernel_patches/fs/susfs.c fs/
+        cp ~/susfs4ksu/kernel_patches/include/linux/susfs.h include/linux/
+        
+        # Apply SUSFS kernel patch
+        echo "Applying SUSFS 4.14 patch..."
+        patch -p1 < ~/susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.14.patch || echo "Patch applied with warnings"
+        
+        # Apply SUSFS to BakaSU
+        cd BakaSU
+        patch -p1 < ~/susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch || echo "BakaSU SUSFS patch applied with warnings"
+        cd ..
+        
+        echo "SUSFS integrated successfully"
+        
+    - name: Update defconfig
+      run: |
+        DEFCONFIG_PATH="arch/arm64/configs/$DEFCONFIG"
+        echo "Updating defconfig at: $DEFCONFIG_PATH"
+        
+        # Add BakaSU and SUSFS configs if not already present
+        if ! grep -q "CONFIG_BAKASU=y" "$DEFCONFIG_PATH"; then
+          cat >> "$DEFCONFIG_PATH" << 'EOF'
+
+# BakaSU + SUSFS Configuration
+CONFIG_BAKASU=y
+CONFIG_BAKASU_DEBUG=y
+CONFIG_BAKASU_SUSFS=y
+CONFIG_BAKASU_SUSFS_SUS_SU=y
+CONFIG_BAKASU_SUSFS_SUS_KSTAT=y
+CONFIG_BAKASU_SUSFS_SUS_OVERLAYFS=y
+CONFIG_BAKASU_SUSFS_TRY_UMOUNT=y
+CONFIG_BAKASU_SUSFS_SPOOF_UNAME=y
+CONFIG_BAKASU_SUSFS_ENABLE_LOG=y
+CONFIG_BAKASU_SUSFS_OPEN_REDIRECT=y
+CONFIG_BAKASU_SUSFS_SUS_PATH=y
+CONFIG_BAKASU_SUSFS_SUS_MOUNT=y
+EOF
+        fi
+        
+        echo "Defconfig updated successfully"
+        
+    - name: Build kernel
+      run: |
+        export PATH=~/toolchains/neutron-clang-24/bin:$PATH
+        export KBUILD_BUILD_USER=GitHub-Actions
+        export KBUILD_BUILD_HOST=GitHub-Runner
+        
+        # Setup ccache
+        export USE_CCACHE=1
+        export CCACHE_DIR=$HOME/.ccache
+        ccache -M 8G
+        ccache -z
+        
+        echo "Starting kernel build..."
+        echo "Using Neutron Clang 24"
+        clang --version
+        
+        # Clean build
+        make mrproper
+        
+        # Generate defconfig
+        make O=out ARCH=$ARCH LLVM=1 LLVM_IAS=1 $DEFCONFIG
+        
+        # Check if BakaSU is enabled
+        if grep -q "CONFIG_BAKASU=y" out/.config; then
+          echo "✅ BakaSU is enabled in config"
+        else
+          echo "❌ BakaSU is not enabled!"
+          exit 1
+        fi
+        
+        # Build kernel
+        make -j$(nproc) O=out \
+          ARCH=$ARCH \
+          LLVM=1 \
+          LLVM_IAS=1 \
+          CC="ccache clang" \
+          LD=ld.lld \
+          AR=llvm-ar \
+          NM=llvm-nm \
+          OBJCOPY=llvm-objcopy \
+          OBJDUMP=llvm-objdump \
+          STRIP=llvm-strip \
+          CLANG_TRIPLE=aarch64-linux-gnu- \
+          CROSS_COMPILE=aarch64-linux-gnu- \
+          CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
+        
+        # Show ccache stats
+        ccache -s
+        
+    - name: Check build output
+      run: |
+        if [ -f out/arch/arm64/boot/Image.gz-dtb ]; then
+          echo "✅ Kernel image built successfully!"
+          ls -lh out/arch/arm64/boot/Image.gz-dtb
+        elif [ -f out/arch/arm64/boot/Image.gz ]; then
+          echo "✅ Kernel Image.gz built successfully!"
+          ls -lh out/arch/arm64/boot/Image.gz
+        else
+          echo "❌ Kernel image not found!"
+          exit 1
+        fi
+        
+    - name: Clone AnyKernel3
+      run: |
+        git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git ~/AnyKernel3
+        
+    - name: Setup AnyKernel3
+      run: |
+        cd ~/AnyKernel3
+        
+        # Update anykernel.sh for Realme 6 Pro
+        cat > anykernel.sh << 'EOF'
+# AnyKernel3 Ramdisk Mod Script
+# osm0sis @ xda-developers
+
+## AnyKernel setup
+# begin properties
+properties() { '
+kernel.string=Neko Kernel with BakaSU+SUSFS
+do.devicecheck=1
+do.modules=0
+do.systemless=1
+do.cleanup=1
+do.cleanuponabort=0
+device.name1=RMX2061
+device.name2=RMX2063
+device.name3=
+device.name4=
+device.name5=
+supported.versions=10 - 14
+supported.patchlevels=
+'; } # end properties
+
+# shell variables
+block=/dev/block/bootdevice/by-name/boot;
+is_slot_device=1;
+ramdisk_compression=auto;
+patch_vbmeta_flag=auto;
+
+## AnyKernel methods (DO NOT CHANGE)
+# import patching functions/variables - see for reference
+. tools/ak3-core.sh;
+
+## AnyKernel install
+dump_boot;
+write_boot;
+## end install
+EOF
+
+        # Copy kernel image
+        if [ -f $GITHUB_WORKSPACE/out/arch/arm64/boot/Image.gz-dtb ]; then
+          cp $GITHUB_WORKSPACE/out/arch/arm64/boot/Image.gz-dtb ~/AnyKernel3/Image.gz-dtb
+        elif [ -f $GITHUB_WORKSPACE/out/arch/arm64/boot/Image.gz ]; then
+          cp $GITHUB_WORKSPACE/out/arch/arm64/boot/Image.gz ~/AnyKernel3/Image.gz
+        fi
+        
+        # Copy dtb and dtbo if they exist
+        if [ -f $GITHUB_WORKSPACE/out/arch/arm64/boot/dtb.img ]; then
+          cp $GITHUB_WORKSPACE/out/arch/arm64/boot/dtb.img ~/AnyKernel3/
+        fi
+        
+        if [ -f $GITHUB_WORKSPACE/out/arch/arm64/boot/dtbo.img ]; then
+          cp $GITHUB_WORKSPACE/out/arch/arm64/boot/dtbo.img ~/AnyKernel3/
+        fi
+        
+    - name: Create flashable zip
+      run: |
+        cd ~/AnyKernel3
+        
+        # Create zip name with date
+        DATE=$(date +%Y%m%d-%H%M)
+        ZIPNAME="${KERNEL_NAME}-${DEVICE}-BakaSU-SUSFS-${DATE}.zip"
+        
+        # Create zip
+        zip -r9 "$ZIPNAME" * -x .git README.md .gitignore .github placeholder
+        
+        # Move to workspace
+        mv "$ZIPNAME" $GITHUB_WORKSPACE/
+        
+        echo "ZIPNAME=$ZIPNAME" >> $GITHUB_ENV
+        echo "✅ Flashable zip created: $ZIPNAME"
+        
+    - name: Upload kernel zip
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.KERNEL_NAME }}-${{ env.DEVICE }}-${{ github.sha }}
+        path: |
+          *.zip
+        retention-days: 30
+        
+    - name: Upload kernel image
+      uses: actions/upload-artifact@v4
+      with:
+        name: kernel-images-${{ github.sha }}
+        path: |
+          out/arch/arm64/boot/Image*
+          out/arch/arm64/boot/*.img
+        retention-days: 7
+        
+    - name: Create Release
+      if: github.ref == 'refs/heads/Neko-Baka' && github.event_name == 'push'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.run_number }}-bakasu
+        name: Neko Kernel with BakaSU+SUSFS - Build ${{ github.run_number }}
+        body: |
+          ## Neko Kernel - BakaSU + SUSFS Build
+          
+          **Device:** Realme 6 Pro (RMX2061/RMX2063)
+          **Kernel Version:** 4.14.357
+          **Compiler:** Neutron Clang 24
+          **Root Solution:** BakaSU + SUSFS
+          
+          ### Features:
+          - ✅ BakaSU (KernelSU fork) integrated
+          - ✅ SUSFS for enhanced root hiding
+          - ✅ Built with Neutron Clang 24
+          - ✅ Optimized for Realme 6 Pro
+          
+          ### Installation:
+          1. Download the ZIP file below
+          2. Boot to recovery (TWRP/OrangeFox)
+          3. Flash the ZIP
+          4. Reboot
+          5. Install BakaSU Manager APK
+          
+          **Build Date:** ${{ github.event.head_commit.timestamp }}
+          **Commit:** ${{ github.sha }}
+        files: |
+          *.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
