@@ -148,25 +148,26 @@ jobs:
         # Generate defconfig
         make O=out ARCH=$ARCH LLVM=1 LLVM_IAS=1 $DEFCONFIG
         
-        # Force enable BakaSU configs (in case defconfig processing disabled them)
-        echo "Ensuring BakaSU configs are enabled..."
-        scripts/config --file out/.config -e BAKASU
-        scripts/config --file out/.config -e BAKASU_DEBUG
-        scripts/config --file out/.config -e BAKASU_SUSFS
-        scripts/config --file out/.config -e BAKASU_SUSFS_SUS_SU
-        scripts/config --file out/.config -e BAKASU_SUSFS_SUS_PATH
-        scripts/config --file out/.config -e BAKASU_SUSFS_SUS_MOUNT
+        # Force enable BakaSU configs (BakaSU uses KSU config symbol)
+        echo "Ensuring BakaSU (KSU) configs are enabled..."
+        scripts/config --file out/.config -e KSU
+        scripts/config --file out/.config -e KSU_DEBUG
+        scripts/config --file out/.config -e KSU_SUSFS
+        scripts/config --file out/.config -e KSU_SUSFS_SUS_SU
+        scripts/config --file out/.config -e KSU_SUSFS_SUS_PATH
+        scripts/config --file out/.config -e KSU_SUSFS_SUS_MOUNT
         
         # Regenerate config with BakaSU enabled
         make O=out ARCH=$ARCH LLVM=1 LLVM_IAS=1 olddefconfig
         
-        # Check if BakaSU is enabled
-        if grep -q "CONFIG_BAKASU=y" out/.config; then
-          echo "✅ BakaSU is enabled in config"
+        # Check if BakaSU/KSU is enabled
+        if grep -q "CONFIG_KSU=" out/.config; then
+          echo "✅ BakaSU (KSU) is enabled in config"
+          grep "CONFIG_KSU" out/.config | head -5
         else
-          echo "❌ BakaSU is not enabled!"
-          echo "Showing BakaSU related configs:"
-          grep -i bakasu out/.config || echo "No BakaSU configs found"
+          echo "❌ BakaSU (KSU) is not enabled!"
+          echo "Showing KSU related configs:"
+          grep -i ksu out/.config || echo "No KSU configs found"
           exit 1
         fi
         
