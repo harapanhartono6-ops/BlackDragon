@@ -16,6 +16,10 @@ static void umount_mnt(struct path *path, int flags) {
 }
 PATCH1
 
+# Force recompile by touching file
+touch fs/susfs.c
+echo "Touched fs/susfs.c to force recompile"
+
 # Verify susfs.c patch
 echo "Verifying susfs.c patch..."
 sed -n '1160,1175p' fs/susfs.c
@@ -43,9 +47,21 @@ char *strrchr(const char *s, int c)
 #endif
 PATCH2
 
+# Force recompile by touching file
+touch drivers/firmware/efi/libstub/string.c
+echo "Touched string.c to force recompile"
+
 # Verify string.c patch
 echo "Verifying string.c patch..."
 tail -20 drivers/firmware/efi/libstub/string.c
+
+# Force clean to remove any cached objects
+echo ""
+echo "Removing any cached object files..."
+rm -f fs/susfs.o fs/.susfs.o.cmd
+rm -f drivers/firmware/efi/libstub/*.o
+rm -f drivers/firmware/efi/libstub/.*.o.cmd
+echo "Cached objects removed"
 
 echo ""
 echo "=== Runtime patches applied successfully ==="
