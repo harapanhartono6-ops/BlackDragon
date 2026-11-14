@@ -142,8 +142,10 @@ jobs:
         echo "Using Neutron Clang 24"
         clang --version
         
-        # Clean build
+        # Clean build (force clean to avoid cache issues)
         make mrproper
+        make clean
+        rm -rf out
         
         # Generate defconfig
         make O=out ARCH=$ARCH LLVM=1 LLVM_IAS=1 $DEFCONFIG
