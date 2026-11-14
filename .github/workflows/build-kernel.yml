@@ -50,28 +50,21 @@ jobs:
         
     - name: Download Neutron Clang
       run: |
-        mkdir -p ~/toolchains
-        cd ~/toolchains
+        mkdir -p ~/toolchains/neutron-clang
+        cd ~/toolchains/neutron-clang
         echo "Downloading Neutron Clang (latest release)..."
         
         # Download latest Neutron Clang build
         wget -q --show-progress https://github.com/Neutron-Toolchains/clang-build-catalogue/releases/download/06092026/neutron-clang-06092026.tar.zst
         
         echo "Extracting Neutron Clang..."
+        # Extract directly into current directory (no wrapper folder)
         tar -I zstd -xf neutron-clang-06092026.tar.zst
         rm neutron-clang-06092026.tar.zst
         
-        # Find the extracted directory and rename to standard name
-        EXTRACTED_DIR=$(ls -d neutron-* | head -1)
-        if [ -d "$EXTRACTED_DIR" ]; then
-          mv "$EXTRACTED_DIR" neutron-clang
-          echo "Clang installed at: ~/toolchains/neutron-clang"
-          ~/toolchains/neutron-clang/bin/clang --version
-        else
-          echo "Error: Could not find extracted directory"
-          ls -la
-          exit 1
-        fi
+        echo "Clang installed at: ~/toolchains/neutron-clang"
+        ls -la
+        ~/toolchains/neutron-clang/bin/clang --version
         
     - name: Clone BakaSU
       run: |
