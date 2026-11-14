@@ -25,8 +25,19 @@ jobs:
     - name: Checkout kernel source
       uses: actions/checkout@v4
       with:
+        ref: Neko-Baka
         submodules: recursive
-        fetch-depth: 1
+        fetch-depth: 0
+        clean: true
+        
+    - name: Verify source files
+      run: |
+        echo "Verifying fixed files are present..."
+        echo "Checking fs/susfs.c for path_umount fix:"
+        grep -A 3 "path_umount not available" fs/susfs.c || echo "ERROR: SUSFS fix not found!"
+        echo "Checking libstub/string.c for strrchr:"
+        grep -A 3 "strrchr" drivers/firmware/efi/libstub/string.c || echo "ERROR: strrchr not found!"
+        echo "Files verified!"
         
     - name: Setup build environment
       run: |
