@@ -54,9 +54,9 @@ jobs:
     - name: Setup ccache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: kernel-build-${{ github.sha }}
+        key: kernel-build-v2-${{ github.sha }}
         restore-keys: |
-          kernel-build-
+          kernel-build-v2-
         max-size: 8G
         
     - name: Download Neutron Clang
@@ -143,9 +143,10 @@ jobs:
         export KBUILD_BUILD_USER=GitHub-Actions
         export KBUILD_BUILD_HOST=GitHub-Runner
         
-        # Setup ccache
+        # Setup ccache (but clear it first to avoid stale objects)
         export USE_CCACHE=1
         export CCACHE_DIR=$HOME/.ccache
+        ccache -C  # Clear all cache
         ccache -M 8G
         ccache -z
         
