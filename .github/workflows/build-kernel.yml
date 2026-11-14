@@ -61,11 +61,17 @@ jobs:
         tar -I zstd -xf neutron-clang-06092026.tar.zst
         rm neutron-clang-06092026.tar.zst
         
-        # Rename to standard name
-        mv neutron-clang-06092026 neutron-clang
-        
-        echo "Clang installed at: ~/toolchains/neutron-clang"
-        ~/toolchains/neutron-clang/bin/clang --version
+        # Find the extracted directory and rename to standard name
+        EXTRACTED_DIR=$(ls -d neutron-* | head -1)
+        if [ -d "$EXTRACTED_DIR" ]; then
+          mv "$EXTRACTED_DIR" neutron-clang
+          echo "Clang installed at: ~/toolchains/neutron-clang"
+          ~/toolchains/neutron-clang/bin/clang --version
+        else
+          echo "Error: Could not find extracted directory"
+          ls -la
+          exit 1
+        fi
         
     - name: Clone BakaSU
       run: |
