@@ -32,12 +32,22 @@ jobs:
         
     - name: Verify source files
       run: |
-        echo "Verifying fixed files are present..."
-        echo "Checking fs/susfs.c for path_umount fix:"
-        grep -A 3 "path_umount not available" fs/susfs.c || echo "ERROR: SUSFS fix not found!"
+        echo "=== Verifying fixed files are present ==="
+        echo "Current branch:"
+        git branch -v
+        echo "Latest commit:"
+        git log -1 --oneline
+        echo ""
+        echo "Checking fs/susfs.c line 1165 (should be commented path_umount):"
+        sed -n '1160,1170p' fs/susfs.c
+        echo ""
+        echo "Checking for path_umount call (should be empty/commented):"
+        grep -n "path_umount" fs/susfs.c || echo "✓ path_umount not found (good!)"
+        echo ""
         echo "Checking libstub/string.c for strrchr:"
-        grep -A 3 "strrchr" drivers/firmware/efi/libstub/string.c || echo "ERROR: strrchr not found!"
-        echo "Files verified!"
+        tail -20 drivers/firmware/efi/libstub/string.c
+        echo ""
+        echo "=== Verification complete ==="
         
     - name: Setup build environment
       run: |
