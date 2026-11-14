@@ -112,27 +112,15 @@ jobs:
         DEFCONFIG_PATH="arch/arm64/configs/$DEFCONFIG"
         echo "Updating defconfig at: $DEFCONFIG_PATH"
         
-        # Add BakaSU and SUSFS configs if not already present
-        if ! grep -q "CONFIG_BAKASU=y" "$DEFCONFIG_PATH"; then
-          cat >> "$DEFCONFIG_PATH" << 'EOF'
-
-# BakaSU + SUSFS Configuration
-CONFIG_BAKASU=y
-CONFIG_BAKASU_DEBUG=y
-CONFIG_BAKASU_SUSFS=y
-CONFIG_BAKASU_SUSFS_SUS_SU=y
-CONFIG_BAKASU_SUSFS_SUS_KSTAT=y
-CONFIG_BAKASU_SUSFS_SUS_OVERLAYFS=y
-CONFIG_BAKASU_SUSFS_TRY_UMOUNT=y
-CONFIG_BAKASU_SUSFS_SPOOF_UNAME=y
-CONFIG_BAKASU_SUSFS_ENABLE_LOG=y
-CONFIG_BAKASU_SUSFS_OPEN_REDIRECT=y
-CONFIG_BAKASU_SUSFS_SUS_PATH=y
-CONFIG_BAKASU_SUSFS_SUS_MOUNT=y
-EOF
+        # BakaSU and SUSFS configs should already be in defconfig from source
+        # Just verify they exist
+        if grep -q "CONFIG_BAKASU=y" "$DEFCONFIG_PATH"; then
+          echo "✅ BakaSU configs found in defconfig"
+        else
+          echo "⚠️  BakaSU configs not found, but will be added during defconfig generation"
         fi
         
-        echo "Defconfig updated successfully"
+        echo "Defconfig check completed"
         
     - name: Build kernel
       run: |
