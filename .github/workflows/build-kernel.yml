@@ -48,27 +48,24 @@ jobs:
           kernel-build-
         max-size: 8G
         
-    - name: Download Neutron Clang 24
+    - name: Download Neutron Clang
       run: |
         mkdir -p ~/toolchains
         cd ~/toolchains
-        echo "Downloading Neutron Clang..."
+        echo "Downloading Neutron Clang (latest release)..."
         
-        # Try latest release
-        if wget -q --show-progress https://github.com/Neutron-Toolchains/clang-build-catalogue/releases/download/11032025/neutron-clang-24-aarch64-linux-gnu.tar.zst; then
-          echo "Downloaded from 11032025 release"
-        else
-          echo "Trying alternative download method..."
-          curl -L -o neutron-clang-24-aarch64-linux-gnu.tar.zst \
-            https://github.com/Neutron-Toolchains/clang-build-catalogue/releases/download/11032025/neutron-clang-24-aarch64-linux-gnu.tar.zst
-        fi
+        # Download latest Neutron Clang build
+        wget -q --show-progress https://github.com/Neutron-Toolchains/clang-build-catalogue/releases/download/06092026/neutron-clang-06092026.tar.zst
         
         echo "Extracting Neutron Clang..."
-        tar -I zstd -xf neutron-clang-24-aarch64-linux-gnu.tar.zst
-        rm neutron-clang-24-aarch64-linux-gnu.tar.zst
-        mv neutron-clang neutron-clang-24
-        echo "Clang installed at: ~/toolchains/neutron-clang-24"
-        ~/toolchains/neutron-clang-24/bin/clang --version
+        tar -I zstd -xf neutron-clang-06092026.tar.zst
+        rm neutron-clang-06092026.tar.zst
+        
+        # Rename to standard name
+        mv neutron-clang-06092026 neutron-clang
+        
+        echo "Clang installed at: ~/toolchains/neutron-clang"
+        ~/toolchains/neutron-clang/bin/clang --version
         
     - name: Clone BakaSU
       run: |
@@ -132,7 +129,7 @@ jobs:
         
     - name: Build kernel
       run: |
-        export PATH=~/toolchains/neutron-clang-24/bin:$PATH
+        export PATH=~/toolchains/neutron-clang/bin:$PATH
         export KBUILD_BUILD_USER=GitHub-Actions
         export KBUILD_BUILD_HOST=GitHub-Runner
         
