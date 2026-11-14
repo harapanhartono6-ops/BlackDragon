@@ -148,11 +148,25 @@ jobs:
         # Generate defconfig
         make O=out ARCH=$ARCH LLVM=1 LLVM_IAS=1 $DEFCONFIG
         
+        # Force enable BakaSU configs (in case defconfig processing disabled them)
+        echo "Ensuring BakaSU configs are enabled..."
+        scripts/config --file out/.config -e BAKASU
+        scripts/config --file out/.config -e BAKASU_DEBUG
+        scripts/config --file out/.config -e BAKASU_SUSFS
+        scripts/config --file out/.config -e BAKASU_SUSFS_SUS_SU
+        scripts/config --file out/.config -e BAKASU_SUSFS_SUS_PATH
+        scripts/config --file out/.config -e BAKASU_SUSFS_SUS_MOUNT
+        
+        # Regenerate config with BakaSU enabled
+        make O=out ARCH=$ARCH LLVM=1 LLVM_IAS=1 olddefconfig
+        
         # Check if BakaSU is enabled
         if grep -q "CONFIG_BAKASU=y" out/.config; then
           echo "✅ BakaSU is enabled in config"
         else
           echo "❌ BakaSU is not enabled!"
+          echo "Showing BakaSU related configs:"
+          grep -i bakasu out/.config || echo "No BakaSU configs found"
           exit 1
         fi
         
