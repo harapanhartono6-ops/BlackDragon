@@ -30,14 +30,14 @@
 
 #ifdef CONFIG_OPLUS_SYSTEM_KERNEL_QCOM
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
-#include <../../../../kernel/msm-4.19/mm/internal.h>
-#include <../../../../kernel/msm-4.19/mm/slab.h>
+#include "../../../../mm/internal.h"
+#include "../../../../mm/slab.h"
 #else
 #include "../../../../mm/internal.h"
-#include <../../../../kernel/msm-4.14/mm/slab.h>
+#include "../../../../mm/slab.h"
 #endif //(LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
 #else
-#include <../../../../../kernel-4.19/mm/slab.h>
+#include "../../../../mm/slab.h"
 #include <../../../../../kernel-4.19/mm/internal.h>
 #endif
 
